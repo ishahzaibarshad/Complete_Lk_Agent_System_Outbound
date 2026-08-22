@@ -1,0 +1,40 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --dev --bind 0.0.0.0 --node-ip 16.192.173.246 --redis-host redis:6379
+    depends_on:
+      - redis
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+      - "50000-50100:50000-50100/udp"
+
+  sip:
+    image: livekit/sip:latest
+    depends_on:
+      - redis
+      - livekit
+    volumes:
+      - ../sip.yaml:/etc/livekit-sip.yaml
+    command: --config /etc/livekit-sip.yaml
+    ports:
+      - "5060:5060/udp"
+      - "12000-12100:12000-12100/udp"
+
+
+  asterisk:
+    image: andrius/asterisk:latest
+    restart: unless-stopped
+   
+    volumes:
+      - ../asterisk/pjsip.conf:/etc/asterisk/pjsip.conf
+      - ../asterisk/extensions.conf:/etc/asterisk/extensions.conf
+
+    ports:
+      - "5062:5060/udp"
+      - "10001-10100:10001-10100/udp"

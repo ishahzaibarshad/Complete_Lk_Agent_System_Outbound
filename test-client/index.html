@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Final Expense AI Agent Test</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 20px;
+    }
+
+    button {
+      padding: 12px 18px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 25px;
+      padding: 15px;
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Final Expense AI Agent</h1>
+
+  <p>
+    Click Connect, allow microphone access, and speak to the
+    AI agent.
+  </p>
+
+  <button id="connectButton">
+    Connect & Start Microphone
+  </button>
+
+  <button id="disconnectButton" disabled>
+    Disconnect
+  </button>
+
+  <p id="status">
+    Disconnected
+  </p>
+
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+
+  <script src="/src/main.js"></script>
+
+</body>
+</html>
