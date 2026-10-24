@@ -1,9 +1,4 @@
-livekit-agents
-livekit-api
-python-dotenv
-groq
-cartesia
-noise-cancellation
-silero-vad
-
-
+livekit-agents[cartesia,groq,silero]~=1.8
+livekit-api>=1.0,<2.0
+Flask>=3.0,<4.0
+python-dotenv>=1.0,<2.0
