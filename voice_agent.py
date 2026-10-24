@@ -43,6 +43,13 @@ CARTESIA_TTS_MODEL = "sonic-3"
 GROQ_STT_MODEL = "whisper-large-v3-turbo"
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+logger = logging.getLogger("final-expense-agent")
+
+
 # ============================================================
 # STATE
 # ============================================================
@@ -424,7 +431,7 @@ class FinalExpenseAssistant(Agent):
 
             return True
 
-        except Exception as exc:
+        except Exception:
 
             self.state.transfer_failed = True
 
@@ -891,11 +898,7 @@ async def entrypoint(ctx: JobContext):
 
         for participant in participants:
 
-            logger.info(
-                "REMOTE PARTICIPANT | identity=%s | kind=%s",
-                participant.identity,
-                participant.kind,
-            )
+            logger.info("REMOTE PARTICIPANT | kind=%s", participant.kind)
 
         linked = session.room_io.linked_participant
 
