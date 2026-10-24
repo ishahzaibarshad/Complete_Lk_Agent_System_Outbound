@@ -9,3 +9,6 @@ __pycache__/
 __pycache__/
 *.pyc
 test-client/node_modules/
+
+# Generated bearer tokens
+/test-client/public/token.json

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from livekit import api, rtc
 
-load_dotenv(".env", override=True)
+load_dotenv(".env")
 
 ROOM = "terminal-final-expense-1425"
 

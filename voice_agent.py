@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import os
 import re
 from dataclasses import dataclass
 from typing import Optional
 
-from dotenv import load_dotenv
 
 from livekit import rtc
 from livekit.agents import (
@@ -23,101 +21,26 @@ from livekit.agents import (
 from livekit.plugins import cartesia, groq
 from livekit.plugins.silero import VAD as SileroVAD
 
-
-# ============================================================
-# ENVIRONMENT
-# ============================================================
-
-load_dotenv(".env", override=True)
-
-
-# ============================================================
-# API KEYS
-# ============================================================
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY", "").strip()
+from settings import (
+    require_provider_credentials,
+    require_transfer_configuration,
+    settings,
+)
 
 
 # ============================================================
 # AGENT CONFIGURATION
 # ============================================================
 
-AGENT_NAME = (
-    os.getenv("AGENT_NAME", "Sara").strip()
-    or "Sara"
-)
-
-COMPANY_NAME = (
-    os.getenv("COMPANY_NAME", "Senior Care").strip()
-    or "Senior Care"
-)
-
-MIN_AGE = int(os.getenv("MIN_AGE", "50"))
-MAX_AGE = int(os.getenv("MAX_AGE", "80"))
-
-LICENSED_AGENT_NUMBER = (
-    os.getenv("LICENSED_AGENT_NUMBER", "").strip()
-)
-
-ENABLE_TRANSFER = (
-    os.getenv(
-        "ENABLE_SIP_TRANSFER",
-        os.getenv("ENABLE_TRANSFER", "true"),
-    )
-    .strip()
-    .lower()
-    == "true"
-)
-
-
-# ============================================================
-# CARTESIA
-# ============================================================
-
-CARTESIA_VOICE_ID = (
-    os.getenv(
-        "CARTESIA_VOICE_ID",
-        "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
-    ).strip()
-    or "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc"
-)
-
+AGENT_NAME = settings.agent_name
+COMPANY_NAME = settings.company_name
+MIN_AGE = settings.min_age
+MAX_AGE = settings.max_age
+LICENSED_AGENT_NUMBER = settings.licensed_agent_number
+ENABLE_TRANSFER = settings.enable_sip_transfer
+CARTESIA_VOICE_ID = settings.cartesia_voice_id
 CARTESIA_TTS_MODEL = "sonic-3"
-
-
-# ============================================================
-# GROQ STT
-# ============================================================
-
 GROQ_STT_MODEL = "whisper-large-v3-turbo"
-
-
-# ============================================================
-# LOGGING
-# ============================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
-
-logger = logging.getLogger("final-expense-agent")
-
-
-# ============================================================
-# STARTUP VALIDATION
-# ============================================================
-
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "GROQ_API_KEY is required."
-    )
-
-if not CARTESIA_API_KEY:
-    raise RuntimeError(
-        "CARTESIA_API_KEY is required."
-    )
 
 
 # ============================================================
@@ -410,11 +333,7 @@ class FinalExpenseAssistant(Agent):
 
         for participant in participants:
 
-            logger.info(
-                "REMOTE PARTICIPANT | identity=%s | kind=%s",
-                participant.identity,
-                participant.kind,
-            )
+            logger.info("REMOTE PARTICIPANT | kind=%s", participant.kind)
 
             if (
                 participant.kind
@@ -440,11 +359,7 @@ class FinalExpenseAssistant(Agent):
 
         self.state.transfer_attempted = True
 
-        logger.info(
-            "TRANSFER START | enabled=%s | number=%s",
-            ENABLE_TRANSFER,
-            LICENSED_AGENT_NUMBER or "(missing)",
-        )
+        logger.info("TRANSFER START | enabled=%s", ENABLE_TRANSFER)
 
         if not ENABLE_TRANSFER:
 
@@ -493,11 +408,7 @@ class FinalExpenseAssistant(Agent):
         ):
             transfer_target = f"tel:{transfer_target}"
 
-        logger.info(
-            "SIP TRANSFER | participant=%s | target=%s",
-            sip_participant.identity,
-            transfer_target,
-        )
+        logger.info("SIP TRANSFER STARTED")
 
         try:
 
@@ -509,10 +420,7 @@ class FinalExpenseAssistant(Agent):
 
             self.state.transfer_completed = True
 
-            logger.info(
-                "SIP TRANSFER SUCCESS | target=%s",
-                transfer_target,
-            )
+            logger.info("SIP TRANSFER SUCCEEDED")
 
             return True
 
@@ -520,11 +428,7 @@ class FinalExpenseAssistant(Agent):
 
             self.state.transfer_failed = True
 
-            logger.exception(
-                "SIP TRANSFER FAILED | target=%s | error=%s",
-                transfer_target,
-                exc,
-            )
+            logger.error("SIP TRANSFER FAILED; provider error details suppressed")
 
             return False
 
@@ -546,10 +450,7 @@ class FinalExpenseAssistant(Agent):
             new_message.text_content or ""
         ).strip()
 
-        logger.info(
-            "CUSTOMER SPEECH | %s",
-            transcript,
-        )
+        logger.info("CUSTOMER SPEECH RECEIVED")
 
         if not transcript:
 
@@ -578,10 +479,7 @@ class FinalExpenseAssistant(Agent):
 
             self.state.age = age
 
-            logger.info(
-                "AGE CAPTURED | age=%d",
-                age,
-            )
+            logger.info("AGE CAPTURED")
 
             if age < MIN_AGE or age > MAX_AGE:
 
@@ -627,10 +525,7 @@ class FinalExpenseAssistant(Agent):
 
             self.state.name = name
 
-            logger.info(
-                "CUSTOMER NAME CAPTURED | name=%s",
-                name,
-            )
+            logger.info("CUSTOMER NAME CAPTURED")
 
             await self.speak(
                 "Thank you. Would you like to hear more "
@@ -677,6 +572,14 @@ class FinalExpenseAssistant(Agent):
             # =================================================
             # INTEREST = YES
             # =================================================
+
+            if not ENABLE_TRANSFER:
+                self.state.call_ending = True
+                await self.speak(
+                    "Thank you for your interest. A licensed representative is not "
+                    "available in this test setup, so I cannot connect you right now."
+                )
+                raise StopResponse()
 
             await self.speak(
                 "Great. Please hold for just a moment "
@@ -798,6 +701,9 @@ server = AgentServer()
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
 
+    require_provider_credentials(settings)
+    require_transfer_configuration(settings)
+
     logger.info("=" * 70)
     logger.info(
         "NEW CALL | room=%s",
@@ -822,10 +728,7 @@ async def entrypoint(ctx: JobContext):
         "TRANSFER ENABLED = %s",
         ENABLE_TRANSFER,
     )
-    logger.info(
-        "TRANSFER NUMBER = %s",
-        LICENSED_AGENT_NUMBER or "(missing)",
-    )
+    logger.info("TRANSFER NUMBER CONFIGURED = %s", bool(LICENSED_AGENT_NUMBER))
     logger.info("=" * 70)
 
     # ========================================================
@@ -884,10 +787,7 @@ async def entrypoint(ctx: JobContext):
         if not event.is_final:
             return
 
-        logger.info(
-            "FINAL CUSTOMER TRANSCRIPT | %s",
-            event.transcript,
-        )
+        logger.info("FINAL CUSTOMER TRANSCRIPT RECEIVED")
 
     @session.on("agent_state_changed")
     def on_agent_state_changed(event):
@@ -912,11 +812,7 @@ async def entrypoint(ctx: JobContext):
 
             item = event.item
 
-            logger.info(
-                "CONVERSATION ITEM | role=%s | item=%s",
-                getattr(item, "role", None),
-                item,
-            )
+            logger.info("CONVERSATION ITEM | role=%s", getattr(item, "role", None))
 
         except Exception:
 

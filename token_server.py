@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify
 from livekit import api
 
-load_dotenv(".env", override=True)
+load_dotenv(".env")
 
 app = Flask(__name__)
 LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY", "").strip()
@@ -13,7 +13,7 @@ LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET", "").strip()
 
 LIVEKIT_URL = os.getenv(
     "LIVEKIT_URL",
-    "ws://16.170.161.101:7880",
+    "",
 ).strip()
 
 AGENT_NAME = "final-expense-agent"
@@ -23,6 +23,8 @@ if not LIVEKIT_API_KEY:
 
 if not LIVEKIT_API_SECRET:
     raise RuntimeError("LIVEKIT_API_SECRET is missing")
+if not LIVEKIT_URL:
+    raise RuntimeError("LIVEKIT_URL is missing")
 
 
 @app.get("/token")
@@ -80,7 +82,7 @@ def generate_token():
 
 if __name__ == "__main__":
     app.run(
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=5000,
         debug=False,
     )

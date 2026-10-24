@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 from livekit import api
 
-load_dotenv(".env", override=True)
+load_dotenv(".env")
 
 room_name = "token-test-001"
 
@@ -33,4 +33,4 @@ token = (
     .to_jwt()
 )
 
-print(token)
+print(f"Generated test token for room {room_name}; token value was not printed.")

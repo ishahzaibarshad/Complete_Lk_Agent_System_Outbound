@@ -11,7 +11,7 @@ from livekit import api
 # ENVIRONMENT
 # ============================================================
 
-load_dotenv(".env", override=True)
+load_dotenv(".env")
 
 
 # ============================================================
