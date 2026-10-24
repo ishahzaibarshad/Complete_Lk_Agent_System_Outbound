@@ -18,5 +18,5 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-test.txt
       - run: python -m pip install -r requirements-test.txt
-      - run: python -m pytest -q
+      - run: python -m pytest -q tests
       - run: python -m py_compile settings.py voice_agent.py token_server.py generate_browser_token.py test_agent_token.py token_dispatch_test.py
